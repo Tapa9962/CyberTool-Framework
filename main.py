@@ -1,34 +1,78 @@
-from modules.sniffer.packet_sniffer import iniciar_sniffer
+import os
+from colorama import Fore, Style, init
 from modules.scanner.port_scanner import iniciar_escaneo
-from modules.exploit.vuln_checker import run_exploit_check # <--- NUEVO
+from modules.sniffer.packet_sniffer import iniciar_sniffer
+from modules.exploit.vuln_checker import run_exploit_check
+
+# Inicializar colores
+init()
+
+# Variable global para guardar los resultados del escaneo
+ultimo_objetivo = None
+
+def limpiar():
+    os.system('clear')
 
 def menu():
-    print("--- CYBERTOOL FRAMEWORK ---")
-    print("1. Escáner de puertos")
-    print("2. Sniffer de paquetes")
-    print("3. Verificador de Vulnerabilidades (Exploit)")
-    print("4. Salir")
+    global ultimo_objetivo  # <--- ESTO ES VITAL para que funcione la opción 1 y 3
     
-    opcion = input("\nSelecciona una opción: ")
+    while True:
+        limpiar()
+        print(f"{Fore.MAGENTA}============================================")
+        print(f"{Fore.WHITE}       MEGATOOL FRAMEWORK v2.0             ")
+        print(f"{Fore.MAGENTA}============================================{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}1.{Style.RESET_ALL} Escáner de Red y Puertos (Avanzado)")
+        print(f"{Fore.CYAN}2.{Style.RESET_ALL} Sniffer de Paquetes (Inteligente)")
+        print(f"{Fore.CYAN}3.{Style.RESET_ALL} Verificador de Vulnerabilidades")
+        print(f"{Fore.RED}4.{Style.RESET_ALL} Salir")
+        print(f"{Fore.MAGENTA}============================================{Style.RESET_ALL}")
+        
+        opcion = input(f"{Fore.YELLOW}Selecciona una opción: {Style.RESET_ALL}")
 
-    if opcion == "1":
-        target = input("Introduce la IP objetivo: ")
-        iniciar_escaneo(target)
-        menu()
-    elif opcion == "2":
-        iniciar_sniffer()
-        menu()
-    elif opcion == "3":
-        target = input("Introduce la IP objetivo: ")
-        port = int(input("Introduce el puerto a analizar: "))
-        run_exploit_check(target, port)
-        menu()
-    elif opcion == "4":
-        print("Saliendo...")
-        exit()
-    else:
-        print("Opción no válida.")
-        menu()
+        if opcion == "1":
+            target = input(f"\n{Fore.BLUE}[?] Introduce la IP objetivo: {Style.RESET_ALL}")
+            # Guardamos los resultados del escaneo en la variable global
+            servicios = iniciar_escaneo(target)
+            if servicios:
+                ultimo_objetivo = {"ip": target, "servicios": servicios}
+            else:
+                ultimo_objetivo = None
+            input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
+
+        elif opcion == "2":
+            iniciar_sniffer()
+            input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
+
+        elif opcion == "3":
+            # Verificamos si el usuario ha escaneado algo antes
+            if ultimo_objetivo is None:
+                print(f"\n{Fore.RED}[!] ERROR: Primero debes realizar un Escaneo (Opción 1).{Style.RESET_ALL}")
+                input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
+                continue
+
+            print(f"\n{Fore.YELLOW}[*] Analizando servicios detectados en {ultimo_objetivo['ip']}...{Style.RESET_ALL}")
+            
+            encontrado_alguna = False
+            # Iteramos sobre cada servicio encontrado en el escaneo previo
+            for servicio in ultimo_objetivo['servicios']:
+                run_exploit_check(
+                    ultimo_objetivo['ip'], 
+                    servicio['port'], 
+                    servicio['banner']
+                )
+                encontrado_alguna = True
+            
+            if not encontrado_alguna:
+                print(f"{Fore.RED}[!] No se encontraron servicios para analizar.{Style.RESET_ALL}")
+            
+            input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
+
+        elif opcion == "4":
+            print(f"{Fore.GREEN}[+] Saliendo del sistema...{Style.RESET_ALL}")
+            break
+        else:
+            print(f"{Fore.RED}[!] Opción no válida.{Style.RESET_ALL}")
+            input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
 
 if __name__ == "__main__":
     menu()

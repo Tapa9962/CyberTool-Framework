@@ -1,37 +1,102 @@
-from scapy.all import sniff, IP, TCP, UDP
+from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, DNS, Raw
+from colorama import Fore, Style, init
 
-def packet_callback(packet):
-    """
-    Esta función se ejecuta CADA VEZ que el sniffer captura un paquete.
-    """
-    # Verificamos si el paquete tiene una capa IP (es un paquete de red)
-    if IP in packet:
-        ip_src = packet[IP].src  # IP de origen
-        ip_dst = packet[IP].dst  # IP de destino
-        proto = packet[IP].proto # Protocolo (TCP es 6, UDP es 17)
+init()
 
-        # Identificar si es TCP o UDP para que sea más legible
-        protocol_name = "Otro"
-        if TCP in packet:
-            protocol_name = "TCP"
-        elif UDP in packet:
-            protocol_name = "UDP"
+# Diccionario de filtros BPF (Berkeley Packet Filter)
+# Esto es lo que hace que el sniffer sea ultra rápido y profesional
+PROTOCOL_FILTERS = {
+    "1": ("TCP", "tcp"),
+    "2": ("UDP", "udp"),
+    "3": ("ICMP", "icmp"),
+    "4": ("ARP", "arp"),
+    "5": ("DNS", "port 53"),
+    "6": ("HTTP", "port 80"),
+    "7": ("HTTPS", "port 443"),
+    "8": ("FTP", "port 21"),
+    "9": ("SSH", "port 22")
+}
 
-        print(f"[+] {protocol_name} | Origen: {ip_src} -> Destino: {ip_dst}")
-
-def iniciar_sniffer(interfaz=None):
-    """
-    Función principal para iniciar el sniffing.
-    """
-    print(f"[*] Iniciando sniffer en la interfaz: {interfaz if interfaz else 'Predeterminada'}")
-    print("[*] Presiona Ctrl+C para detener el proceso.\n")
-    
+def procesar_paquete(pkt):
+    """Analiza y muestra la información del paquete capturado."""
     try:
-        # sniff() es la función mágica de Scapy
-        # prn: la función que se llama por cada paquete
-        # store: 0 significa que no guarde los paquetes en memoria (para no saturar la RAM)
-        sniff(iface=interfaz, prn=packet_callback, store=0)
-    except PermissionError:
-        print("[!] ERROR: Necesitas permisos de ADMINISTRADOR o ROOT para usar el sniffer.")
+        proto_name = "OTROS"
+        color = Fore.WHITE
+
+        # Identificación de Protocolos
+        if pkt.haslayer(ARP):
+            proto_name = "ARP"
+            color = Fore.YELLOW
+        elif pkt.haslayer(ICMP):
+            proto_name = "ICMP"
+            color = Fore.CYAN
+        elif pkt.haslayer(TCP):
+            proto_name = "TCP"
+            color = Fore.GREEN
+        elif pkt.haslayer(UDP):
+            proto_name = "UDP"
+            color = Fore.BLUE
+        elif pkt.haslayer(DNS):
+            proto_name = "DNS"
+            color = Fore.MAGENTA
+
+        # Extracción de Direcciones
+        if pkt.haslayer(IP):
+            src = pkt[IP].src
+            dst = pkt[IP].dst
+        elif pkt.haslayer(ARP):
+            src = pkt[ARP].hwsrc
+            dst = pkt[ARP].psrc
+        else:
+            src = "N/A"
+            dst = "N/A"
+
+        # Extracción de datos (Payload)
+        payload = ""
+        if pkt.haslayer(Raw):
+            payload = str(pkt[Raw].load)[:40] # Limitamos a 40 caracteres para que sea legible
+
+        # Impresión estética del paquete
+        print(f"{color}[{proto_name:^5}] {src} -> {dst} | Data: {payload}{Style.RESET_ALL}")
+
     except Exception as e:
-        print(f"[!] Ocurrió un error: {e}")
+        # Evita que el sniffer se detenga si un paquete viene corrupto
+        pass
+
+def iniciar_sniffer():
+    print(f"\n{Fore.CYAN}--- MÓDULO DE SNIFFER PRO ---{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}1. Escaneo Completo (Todos los protocolos){Style.RESET_ALL}")
+    print(f"{Fore.WHITE}2. Escaneo Filtrado (Seleccionar protocolo){Style.RESET_ALL}")
+    print(f"{Fore.WHITE}3. Volver al menú principal{Style.RESET_ALL}")
+    
+    opcion = input(f"\n{Fore.YELLOW}[?] Selecciona una opción: {Style.RESET_ALL}")
+
+    if opcion == "1":
+        print(f"\n{Fore.BLUE}[*] Iniciando captura total... (Ctrl+C para parar){Style.RESET_ALL}")
+        try:
+            sniff(prn=procesar_paquete, store=0)
+        except KeyboardInterrupt:
+            print(f"\n{Fore.RED}[!] Captura detenida.{Style.RESET_ALL}")
+
+    elif opcion == "2":
+        print(f"\n{Fore.CYAN}--- SELECCIÓN DE PROTOCOLO ---{Style.RESET_ALL}")
+        for k, v in PROTOCOL_FILTERS.items():
+            print(f"{Fore.WHITE}{k}. {v[0]}{Style.RESET_ALL}")
+        
+        sel = input(f"\n{Fore.YELLOW}[?] Elige el número del protocolo: {Style.RESET_ALL}")
+        
+        if sel in PROTOCOL_FILTERS:
+            nombre_proto, filtro_bpf = PROTOCOL_FILTERS[sel]
+            print(f"\n{Fore.BLUE}[*] Capturando solo {nombre_proto}... (Ctrl+C para parar){Style.RESET_ALL}")
+            try:
+                # Aquí aplicamos el filtro BPF directamente en la tarjeta de red
+                sniff(filter=filtro_bpf, prn=procesar_paquete, store=0)
+            except KeyboardInterrupt:
+                print(f"\n{Fore.RED}[!] Captura detenida.{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}[!] Selección no válida.{Style.RESET_ALL}")
+
+    elif opcion == "3":
+        return
+    else:
+        print(f"{Fore.RED}[!] Opción no válida.{Style.RESET_ALL}")
