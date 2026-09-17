@@ -88,7 +88,7 @@ def iniciar_sniffer():
             nombre_proto, filtro_bpf = PROTOCOL_FILTERS[sel]
             print(f"\n{Fore.BLUE}[*] Capturando solo {nombre_proto}... (Ctrl+C para parar){Style.RESET_ALL}")
             try:
-                # Aquí aplicamos el filtro BPF directamente en la tarjeta de red
+                
                 sniff(filter=filtro_bpf, prn=procesar_paquete, store=0)
             except KeyboardInterrupt:
                 print(f"\n{Fore.RED}[!] Captura detenida.{Style.RESET_ALL}")
