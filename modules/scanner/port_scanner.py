@@ -47,7 +47,7 @@ def iniciar_escaneo(target):
         ports_to_scan = [21, 22, 23, 25, 53, 80, 110, 135, 139, 443, 445, 3306, 3389, 8000, 8080]
         print(f"\n{Fore.GREEN}[+] Modo Rápido activado.{Style.RESET_ALL}")
     elif modo == "2":
-        ports_to_scan = range(1, 65536) # TODOS los puertos
+        ports_to_scan = range(1, 65536) 
         print(f"\n{Fore.RED}[!] MODO MASIVO ACTIVADO. Escaneando 65,535 puertos...{Style.RESET_ALL}")
     else:
         print(f"{Fore.RED}[!] Opción no válida.{Style.RESET_ALL}")
