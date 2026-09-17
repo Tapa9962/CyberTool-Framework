@@ -9,7 +9,7 @@ def grab_banner(ip, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(1.5)
         s.connect((ip, port))
-        # Intentar enviar un paquete básico para despertar servicios
+        
         if port in [80, 8080, 443]:
             s.send(b"HEAD / HTTP/1.1\r\nHost: " + ip.encode() + b"\r\n\r\n")
         banner = s.recv(1024).decode(errors='ignore').strip()
@@ -21,7 +21,7 @@ def grab_banner(ip, port):
 def scan_single_port(target, port):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1) # Timeout corto para no perder tiempo en puertos cerrados
+        s.settimeout(1) 
         result = s.connect_ex((target, port))
         if result == 0:
             banner = grab_banner(target, port)
@@ -42,7 +42,7 @@ def iniciar_escaneo(target):
     if modo == "3":
         return []
 
-    # Definición de puertos según el modo
+    
     if modo == "1":
         ports_to_scan = [21, 22, 23, 25, 53, 80, 110, 135, 139, 443, 445, 3306, 3389, 8000, 8080]
         print(f"\n{Fore.GREEN}[+] Modo Rápido activado.{Style.RESET_ALL}")
@@ -58,16 +58,14 @@ def iniciar_escaneo(target):
 
     found_services = []
 
-    # --- MOTOR DE MULTI-THREADING ULTRA POTENTE ---
-    # Para el escaneo completo, subimos los trabajadores a 200 para que sea viable
+    
     workers = 200 if modo == "2" else 20
     
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        # Usamos una lista para capturar los resultados de los hilos
-        # El uso de list() fuerza la ejecución de la iteración
+        
         results = list(executor.map(lambda p: scan_single_port(target, p), ports_to_scan))
 
-    # Filtrar y mostrar solo los que devolvieron algo (puertos abiertos)
+    
     for res in results:
         if res:
             print(f"{Fore.GREEN}{res['port']:<8} | OPEN     | {res['banner']}{Style.RESET_ALL}")

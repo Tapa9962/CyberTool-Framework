@@ -3,8 +3,7 @@ from colorama import Fore, Style, init
 
 init()
 
-# Diccionario de filtros BPF (Berkeley Packet Filter)
-# Esto es lo que hace que el sniffer sea ultra rápido y profesional
+
 PROTOCOL_FILTERS = {
     "1": ("TCP", "tcp"),
     "2": ("UDP", "udp"),
@@ -18,12 +17,12 @@ PROTOCOL_FILTERS = {
 }
 
 def procesar_paquete(pkt):
-    """Analiza y muestra la información del paquete capturado."""
+    
     try:
         proto_name = "OTROS"
         color = Fore.WHITE
 
-        # Identificación de Protocolos
+        
         if pkt.haslayer(ARP):
             proto_name = "ARP"
             color = Fore.YELLOW
@@ -40,7 +39,7 @@ def procesar_paquete(pkt):
             proto_name = "DNS"
             color = Fore.MAGENTA
 
-        # Extracción de Direcciones
+       
         if pkt.haslayer(IP):
             src = pkt[IP].src
             dst = pkt[IP].dst
@@ -51,16 +50,16 @@ def procesar_paquete(pkt):
             src = "N/A"
             dst = "N/A"
 
-        # Extracción de datos (Payload)
+        
         payload = ""
         if pkt.haslayer(Raw):
-            payload = str(pkt[Raw].load)[:40] # Limitamos a 40 caracteres para que sea legible
+            payload = str(pkt[Raw].load)[:40] 
 
-        # Impresión estética del paquete
+        
         print(f"{color}[{proto_name:^5}] {src} -> {dst} | Data: {payload}{Style.RESET_ALL}")
 
     except Exception as e:
-        # Evita que el sniffer se detenga si un paquete viene corrupto
+        
         pass
 
 def iniciar_sniffer():

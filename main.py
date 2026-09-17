@@ -4,17 +4,17 @@ from modules.scanner.port_scanner import iniciar_escaneo
 from modules.sniffer.packet_sniffer import iniciar_sniffer
 from modules.exploit.vuln_checker import run_exploit_check
 
-# Inicializar colores
+
 init()
 
-# Variable global para guardar los resultados del escaneo
+
 ultimo_objetivo = None
 
 def limpiar():
     os.system('clear')
 
 def menu():
-    global ultimo_objetivo  # <--- ESTO ES VITAL para que funcione la opción 1 y 3
+    global ultimo_objetivo  
     
     while True:
         limpiar()
@@ -31,7 +31,7 @@ def menu():
 
         if opcion == "1":
             target = input(f"\n{Fore.BLUE}[?] Introduce la IP objetivo: {Style.RESET_ALL}")
-            # Guardamos los resultados del escaneo en la variable global
+            
             servicios = iniciar_escaneo(target)
             if servicios:
                 ultimo_objetivo = {"ip": target, "servicios": servicios}
@@ -44,7 +44,7 @@ def menu():
             input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
 
         elif opcion == "3":
-            # Verificamos si el usuario ha escaneado algo antes
+            
             if ultimo_objetivo is None:
                 print(f"\n{Fore.RED}[!] ERROR: Primero debes realizar un Escaneo (Opción 1).{Style.RESET_ALL}")
                 input(f"\n{Fore.WHITE}Presiona Enter para volver al menú...")
@@ -53,7 +53,7 @@ def menu():
             print(f"\n{Fore.YELLOW}[*] Analizando servicios detectados en {ultimo_objetivo['ip']}...{Style.RESET_ALL}")
             
             encontrado_alguna = False
-            # Iteramos sobre cada servicio encontrado en el escaneo previo
+            
             for servicio in ultimo_objetivo['servicios']:
                 run_exploit_check(
                     ultimo_objetivo['ip'], 
